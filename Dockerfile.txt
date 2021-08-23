@@ -1,0 +1,50 @@
+FROM jenkins/jenkins
+USER root
+RUN sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list &&\
+        apt-get update &&\
+        wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg &&\
+        apt -y install apt-transport-https lsb-release &&\
+        sh -c 'echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list' &&\
+        curl -sL https://deb.nodesource.com/setup_14.x | bash - &&\
+        apt-get update &&\
+        apt -y install nodejs wget rsync autoconf automake libtool curl make g++ unzip &&\
+        apt-get update &&\
+        apt -y install vim &&\
+        wget -P /usr/local https://studygolang.com/dl/golang/go1.16.6.linux-amd64.tar.gz && \
+        tar -zxf /usr/local/go1.16.6.linux-amd64.tar.gz -C /usr/local/
+
+ENV     GOROOT=/usr/local/go
+ENV     PATH=$PATH:/usr/local/go/bin
+ENV     GOPATH=/root/go
+ENV     PATH=$GOPATH/bin/:$PATH
+ENV     GOPROXY=https://goproxy.io,direct
+RUN     /usr/local/go/bin/go get github.com/golang/protobuf/protoc-gen-go@latest &&\
+        /usr/local/go/bin/go get google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest &&\
+        /usr/local/go/bin/go get github.com/mwitkow/go-proto-validators/protoc-gen-govalidators@latest
+
+RUN     apt-get update &&\
+        export LD_LIBRARY_PATH=/usr/local/lib &&\
+        wget https://github.com/google/protobuf/releases/download/v3.6.1/protobuf-all-3.6.1.tar.gz &&\
+        tar zxvf protobuf-all-3.6.1.tar.gz &&\
+        cd protobuf-3.6.1 &&\
+        ./autogen.sh &&\
+        ./configure &&\
+        make &&\
+        make install &&\
+        protoc --version
+
+RUN     apt-get -y install pkg-config &&\
+        apt-get -y install aptitude &&\
+        aptitude -y install python-dev &&\
+        export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/System/Library/Frameworks/Python.framework/Versions/2.7/lib/pkgconfig
+
+RUN     wget https://mirrors.tuna.tsinghua.edu.cn/apache/maven/maven-3/3.8.1/binaries/apache-maven-3.8.1-bin.tar.gz &&\
+        tar zxvf apache-maven-3.8.1-bin.tar.gz &&\
+        rm apache-maven-3.8.1-bin.tar.gz &&\
+        mkdir /apache-maven-3.8.1/rep &&\
+        cp -R apache-maven-3.8.1 /usr/local/bin &&\
+        export PATH=apache-maven-3.8.1/bin:$PATH &&\
+        export PATH=/usr/local/bin/apache-maven-3.8.1/bin:$PATH &&\
+        ln -s /usr/local/bin/apache-maven-3.8.1/bin/mvn /usr/local/bin/mvn
+
+RUN     mkdir /monitor
